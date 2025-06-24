@@ -58,126 +58,115 @@
   //   });
 
 
-  const express = require('express');
-  const { createServer } = require("http"); // Create HTTP server for WebSockets
-  const { Server } = require("socket.io"); // Import Socket.io
-  const sequelize = require('./config/database');
-  require('dotenv').config();
-  const cors = require('cors');
-  const cron = require("node-cron"); 
-  const deleteExpiredJobs = require('./utils/deleteExpiredJobs');
-  const deleteOldMessages = require('./utils/deleteOldMessages'); 
-  const Message = require('./models/Message'); // Import Message model
-  
-  // Import routes
-  const authRoutes = require('./routes/authroutes');
-  const passwordRoutes = require('./routes/passwordRoutes');
-  const eventRoutes = require('./routes/eventRoutes'); 
-  const profileRoutes = require('./routes/profileRoutes');
-  const jobRoutes = require('./routes/jobroutes');
-  const searchRoutes = require('./routes/searchRoutes');
-  const feedbackRoutes = require('./routes/feedbackroutes');
-  const adminRoutes = require('./routes/adminRoutes');
-  const messageRoute = require('./routes/messageRoute');
-  const notificationRoutes = require('./routes/notificationRoutes');
-  const { notifyAlumni } = require('./controllers/notificationController');
-  
-  const app = express();
-  const server = createServer(app); // Create HTTP server
-  const io = new Server(server, {
-      cors: { origin: 'http://localhost:3000', credentials: true }
-  });
-  
-  // Middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(cors({ origin: 'http://localhost:3000', credentials: true })); 
-  
-  // Routes
-  app.use('/api', authRoutes);
-  app.use('/api', passwordRoutes);
-  app.use('/api/events', eventRoutes); 
-  app.use('/api', profileRoutes);
-  app.use('/api/jobs', jobRoutes);
-  app.use('/api', searchRoutes);
-  app.use('/api', feedbackRoutes);
-  app.use('/api', adminRoutes);
-  app.use('/api', messageRoute);
-  app.use('/api', notificationRoutes); // Add notification routes
+const express = require('express');
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const sequelize = require('./config/database');
+require('dotenv').config();
+const cors = require('cors');
+const cron = require("node-cron");
+const deleteExpiredJobs = require('./utils/deleteExpiredJobs');
+const deleteOldMessages = require('./utils/deleteOldMessages');
+const Message = require('./models/Message');
 
-  console.log("Backend is running...");
-  
-  // Store connected users
-  const users = {};
-  
-  // ✅ Socket.io connection
-  io.on("connection", (socket) => {
-      
-  
-      // Listen for user identification
-      socket.on("register", (userId) => {
-          users[userId] = socket.id; // Store user socket ID
-          console.log(`User ${userId} registered with socket ID: ${socket.id}`);
-      });
-  
-      // Listen for new messages
-      socket.on("sendMessage", async ({ senderId, receiverId, message }) => {
-          if (!senderId || !receiverId || !message.trim()) return;
-  
-          try {
-              // Save message to database
-              const newMessage = await Message.create({
-                  senderId,
-                  receiverId,
-                  message
-              });
-  
-              // Send message to the receiver if online
-              const receiverSocketId = users[receiverId];
-              if (receiverSocketId) {
-                  io.to(receiverSocketId).emit("receiveMessage", newMessage);
-              }
-  
-              // Emit message back to sender for confirmation
-              io.to(socket.id).emit("messageSent", newMessage);
-          } catch (error) {
-              console.error("Error storing message:", error);
-          }
-      });
-  
-      // Handle disconnect
-      socket.on("disconnect", () => {
-          console.log("🔴 User disconnected:", socket.id);
-          // Remove disconnected user
-          Object.keys(users).forEach((key) => {
-              if (users[key] === socket.id) {
-                  delete users[key];
-              }
-          });
-      });
+// Import routes
+const authRoutes = require('./routes/authroutes');
+const passwordRoutes = require('./routes/passwordRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const jobRoutes = require('./routes/jobroutes');
+const searchRoutes = require('./routes/searchRoutes');
+const feedbackRoutes = require('./routes/feedbackroutes');
+const adminRoutes = require('./routes/adminRoutes');
+const messageRoute = require('./routes/messageRoute');
+const notificationRoutes = require('./routes/notificationRoutes');
+const { notifyAlumni } = require('./controllers/notificationController');
+
+const app = express();
+const server = createServer(app);
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+
+// Socket.io setup
+const io = new Server(server, {
+  cors: { origin: FRONTEND_URL, credentials: true }
+});
+
+// API Routes
+app.use('/api', authRoutes);
+app.use('/api', passwordRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api', profileRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api', searchRoutes);
+app.use('/api', feedbackRoutes);
+app.use('/api', adminRoutes);
+app.use('/api', messageRoute);
+app.use('/api', notificationRoutes);
+
+console.log("✅ Backend is starting...");
+
+const users = {};
+
+io.on("connection", (socket) => {
+  socket.on("register", (userId) => {
+    users[userId] = socket.id;
+    console.log(`🟢 User ${userId} registered (socket ID: ${socket.id})`);
   });
-  
-  // Sync database and start server
-  sequelize
-      .sync({ force: false })
-      .then(() => {
-          server.listen(5000, async () => {
-              console.log(`🚀 Server is running on port 5000`);
-  
-              // ✅ Run cleanup on startup
-              await deleteExpiredJobs();
-              await deleteOldMessages();
-  
-              // ✅ Schedule cleanup every day at midnight
-              cron.schedule("0 0 * * *", async () => {
-                  console.log("⏳ Running scheduled cleanup tasks...");
-                  await deleteExpiredJobs();
-                  await deleteOldMessages();
-                  await notifyAlumni();
-              });
-          });
-      })
-      .catch((err) => {
-          console.error('❌ Unable to sync database:', err);
-      });  
+
+  socket.on("sendMessage", async ({ senderId, receiverId, message }) => {
+    if (!senderId || !receiverId || !message.trim()) return;
+
+    try {
+      const newMessage = await Message.create({ senderId, receiverId, message });
+      const receiverSocketId = users[receiverId];
+
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receiveMessage", newMessage);
+      }
+
+      io.to(socket.id).emit("messageSent", newMessage);
+    } catch (error) {
+      console.error("❌ Error storing message:", error);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔴 User disconnected:", socket.id);
+    Object.keys(users).forEach((key) => {
+      if (users[key] === socket.id) {
+        delete users[key];
+      }
+    });
+  });
+});
+
+// Sync DB and start server
+sequelize
+  .sync({ force: false }) // Do not use `force: true` in production
+  .then(() => {
+    server.listen(PORT, async () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+
+      await deleteExpiredJobs();
+      await deleteOldMessages();
+
+      cron.schedule("0 0 * * *", async () => {
+        console.log("⏳ Running scheduled cleanup tasks...");
+        await deleteExpiredJobs();
+        await deleteOldMessages();
+        await notifyAlumni();
+      });
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Unable to sync database:', err);
+  });
+ 
   
