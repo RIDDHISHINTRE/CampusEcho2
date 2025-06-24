@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const Student = require('../models/studentModel');
 const Alumni = require('../models/Alumni');
 require('dotenv').config();
-const express = require('express');
 
-
+// ✅ Register Student
 const registerStudent = async (req, res) => {
   const { name, email, collegeid, branch, year, collegeIdPhoto } = req.body;
 
@@ -18,7 +18,6 @@ const registerStudent = async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Optional: Validate URL format
     if (collegeIdPhoto && !/^https?:\/\/.+\..+/.test(collegeIdPhoto)) {
       return res.status(400).json({ error: 'Invalid college ID photo URL' });
     }
@@ -29,22 +28,20 @@ const registerStudent = async (req, res) => {
       collegeid,
       branch,
       year,
-      
-      collegeIdPhoto, // Save the URL
+      collegeIdPhoto
     });
 
     res.status(201).json({ message: 'Student registered successfully', student });
   } catch (error) {
-    res.status(500).json({ error : error.message});
+    res.status(500).json({ error: error.message });
   }
 };
 
-
-// Register Alumni
+// ✅ Register Alumni
 const registerAlumni = async (req, res) => {
-  const { name, email, collegeid, branch, graduateCollegeYear,DegreePhoto} = req.body;
+  const { name, email, collegeid, branch, graduateCollegeYear, DegreePhoto } = req.body;
 
-  if (!name || !email || !collegeid || !branch || !graduateCollegeYear ) {
+  if (!name || !email || !collegeid || !branch || !graduateCollegeYear) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
@@ -53,16 +50,17 @@ const registerAlumni = async (req, res) => {
     if (existingAlumni) {
       return res.status(400).json({ error: 'Email already registered' });
     }
+
     if (DegreePhoto && !/^https?:\/\/.+\..+/.test(DegreePhoto)) {
-      return res.status(400).json({ error: 'Invalid college ID photo URL' });
+      return res.status(400).json({ error: 'Invalid degree photo URL' });
     }
+
     const alumni = await Alumni.create({
       name,
-      email, 
-      collegeid, 
-      branch, 
-      graduateCollegeYear, 
-      
+      email,
+      collegeid,
+      branch,
+      graduateCollegeYear,
       DegreePhoto
     });
 
@@ -72,8 +70,7 @@ const registerAlumni = async (req, res) => {
   }
 };
 
-
-// Login Student or Admin
+// ✅ Login Student/Admin
 const loginStudent = async (req, res) => {
   const { email, password } = req.body;
 
@@ -82,28 +79,33 @@ const loginStudent = async (req, res) => {
   }
 
   try {
-
-    
     const student = await Student.findOne({ where: { email } });
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    // const isMatch = await student.isValidPassword(password);
-    // if (!isMatch) {
-    //   return res.status(400).json({ error: 'Invalid credentials' });
-    // }
+    if (!student.password) {
+      return res.status(400).json({ error: 'Password not set for this user. Please contact admin.' });
+    }
 
-    const token = jwt.sign({ id: student.id ,userType: String("student") ,isAdmin: student.isAdmin}, process.env.JWT_SECRET, { expiresIn: '1h' } );
-    res.status(200).json({ message: 'Login successful', token, id: student.id, isAdmin: student.isAdmin ,userType: String("student") });
+    const isMatch = await bcrypt.compare(password, student.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { id: student.id, userType: "student", isAdmin: student.isAdmin },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(200).json({ message: 'Login successful', token, id: student.id, isAdmin: student.isAdmin, userType: "student" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-
-
-// Login Alumni
+// ✅ Login Alumni
 const loginAlumni = async (req, res) => {
   const { email, password } = req.body;
 
@@ -117,18 +119,26 @@ const loginAlumni = async (req, res) => {
       return res.status(404).json({ error: 'Alumni not found' });
     }
 
-    // const isMatch = await alumni.isValidPassword(password);
-    // if (!isMatch) {
-    //   return res.status(400).json({ error: 'Invalid credentials' });
-    // }
+    if (!alumni.password) {
+      return res.status(400).json({ error: 'Password not set for this user. Please contact admin.' });
+    }
 
-    const token = jwt.sign({ id: alumni.id ,userType: String("alumni")}, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ message: 'Login successful', token, id: alumni.id, userType: String("alumni") });
+    const isMatch = await bcrypt.compare(password, alumni.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { id: alumni.id, userType: "alumni" },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(200).json({ message: 'Login successful', token, id: alumni.id, userType: "alumni" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 module.exports = {
   registerStudent,
