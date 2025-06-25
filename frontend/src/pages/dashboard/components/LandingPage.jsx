@@ -9,7 +9,7 @@ const LandingPage = () => {
     <div
       className="min-h-screen bg-cover bg-center flex flex-col z-0"
       style={{
-        backgroundImage: `url("https://pict.edu/images/slider/home1/College%20Photo%2023%20Feb%202023.jpg")`,
+        backgroundImage: "url('https://pict.edu/images/slider/home1/College%20Photo%2023%20Feb%202023.jpg')",
       }}
     >
 
