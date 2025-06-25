@@ -1,7 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MessageCircle, CalendarDays, Bell, Edit, Briefcase, LogOut } from "lucide-react";
+import {
+  MessageCircle,
+  CalendarDays,
+  Bell,
+  Edit,
+  Briefcase,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 import FeedbackForm from "../feedbacks/Feedback";
 import UpcomingEvents from "../Events/UpcomingEvent";
 import JobList from "../Jobs/dashJobList";
@@ -11,6 +19,7 @@ const AlumniDashboard = () => {
   const navigate = useNavigate();
   const [showFeedback, setShowFeedback] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // mobile nav toggle
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -23,7 +32,7 @@ const AlumniDashboard = () => {
     const fetchNotifications = async () => {
       const userId = localStorage.getItem("id");
       if (!userId) return;
-  
+
       try {
         const response = await axiosInstance.get(`/notifications/${userId}`);
         if (response.data.success) {
@@ -33,24 +42,32 @@ const AlumniDashboard = () => {
         console.error("Error fetching notifications:", error);
       }
     };
-  
+
     fetchNotifications();
-  
-    // Poll every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleNotificationClick = async () => {
+  const handleNotificationClick = () => {
     navigate("/notifications");
   };
 
   return (
     <div className="h-screen w-screen bg-white-800 text-gray-900 flex flex-col overflow-hidden">
       {/* Navbar */}
-      <nav className="w-full flex justify-between items-center p-4 bg-white shadow-md">
+      <nav className="w-full bg-white shadow-md p-4 flex justify-between items-center relative z-10">
         <h1 className="text-3xl font-extrabold tracking-wide">CampusEcho</h1>
-        <div className="flex space-x-6 items-center text-lg">
+
+        {/* Hamburger Icon */}
+        <button
+          className="md:hidden text-gray-700"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex space-x-6 items-center text-lg">
           <Link to="/jobs/alumni" className="hover:text-blue-600 flex items-center gap-1">
             <Briefcase className="w-5 h-5" /> Job Opportunities
           </Link>
@@ -60,8 +77,8 @@ const AlumniDashboard = () => {
           <Link to="/edit-alumni-profile" className="hover:text-blue-600 flex items-center gap-1">
             <Edit className="w-5 h-5" /> View Profile
           </Link>
-          <button 
-            onClick={handleNotificationClick} 
+          <button
+            onClick={handleNotificationClick}
             className="relative hover:text-blue-600 flex items-center gap-1"
           >
             <Bell className="w-5 h-5" />
@@ -72,22 +89,52 @@ const AlumniDashboard = () => {
             )}
             Notifications
           </button>
-          
-          <button 
-            onClick={handleLogout} 
+          <button
+            onClick={handleLogout}
             className="flex items-center gap-1 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
           >
             <LogOut className="w-5 h-5" /> Logout
           </button>
         </div>
+
+        {/* Mobile Nav Links */}
+        {mobileMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-white flex flex-col space-y-4 p-4 border-t shadow-md md:hidden text-lg">
+            <Link to="/jobs/alumni" className="flex items-center gap-2 hover:text-blue-600">
+              <Briefcase className="w-5 h-5" /> Job Opportunities
+            </Link>
+            <Link to="/event" className="flex items-center gap-2 hover:text-blue-600">
+              <CalendarDays className="w-5 h-5" /> Events
+            </Link>
+            <Link to="/edit-alumni-profile" className="flex items-center gap-2 hover:text-blue-600">
+              <Edit className="w-5 h-5" /> View Profile
+            </Link>
+            <button
+              onClick={handleNotificationClick}
+              className="flex items-center gap-2 hover:text-blue-600"
+            >
+              <Bell className="w-5 h-5" />
+              Notifications
+              {unreadCount > 0 && (
+                <span className="ml-auto bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+            >
+              <LogOut className="w-5 h-5" /> Logout
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* Main Content */}
       <div className="flex-grow w-full overflow-y-auto p-8 grid grid-cols-1 gap-8">
-        {/* Upcoming Events Section */}
         <UpcomingEvents />
 
-        {/* Job Opportunities Section */}
         <div className="w-full max-w-screen-xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-300">
           <h2 className="text-3xl font-semibold mb-4 border-b-2 border-gray-300 pb-2">
             Jobs Posted by You
@@ -121,6 +168,7 @@ const AlumniDashboard = () => {
 };
 
 export default AlumniDashboard;
+
 
 
 
