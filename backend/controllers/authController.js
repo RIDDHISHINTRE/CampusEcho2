@@ -88,10 +88,10 @@ const loginStudent = async (req, res) => {
       return res.status(400).json({ error: 'Password not set for this user. Please contact admin.' });
     }
 
-    // const isMatch = await bcrypt.compare(password, student.password);
-    // if (!isMatch) {
-    //   return res.status(400).json({ error: 'Invalid credentials' });
-    // }
+    const isMatch = await bcrypt.compare(password, student.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
 
     const token = jwt.sign(
       { id: student.id, userType: "student", isAdmin: student.isAdmin },
@@ -123,10 +123,10 @@ const loginAlumni = async (req, res) => {
       return res.status(400).json({ error: 'Password not set for this user. Please contact admin.' });
     }
 
-    // const isMatch = await bcrypt.compare(password, alumni.password);
-    // if (!isMatch) {
-    //   return res.status(400).json({ error: 'Invalid credentials' });
-    // }
+    const isMatch = await bcrypt.compare(password, alumni.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
 
     const token = jwt.sign(
       { id: alumni.id, userType: "alumni" },
