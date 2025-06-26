@@ -6,7 +6,8 @@ const LoginSignup = () => {
   const [islogin, setlogin] = useState(true);
   const [signupstate, setsignupstate] = useState("");
   const [role, setRole] = useState("student");
-  const [loginError, setLoginError] = useState(""); // new error state
+  const [loginError, setLoginError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -19,7 +20,8 @@ const LoginSignup = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoginError(""); // clear any old errors
+    setLoginError("");
+    setLoading(true);
     try {
       const endpoint = role === "student" ? "/student/login" : "/alumni/login";
       const response = await axiosInstance.post(endpoint, loginData);
@@ -27,6 +29,7 @@ const LoginSignup = () => {
       localStorage.setItem("userType", response.data.userType);
       localStorage.setItem("id", response.data.id);
       localStorage.setItem("isAdmin", response.data.isAdmin);
+
       if (response.data.isAdmin) {
         navigate("/admin-dashboard");
       } else if (role === "student") {
@@ -35,9 +38,10 @@ const LoginSignup = () => {
         navigate("/alumni-dashboard");
       }
     } catch (error) {
-      const msg = error.response?.data?.message || "Login failed. Please try again.";
+      const msg = error?.response?.data?.message || "Login failed. Please try again.";
       setLoginError(msg);
-      console.log("Login failed:", msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,7 +72,6 @@ const LoginSignup = () => {
         backgroundImage: "url('https://img.freepik.com/free-photo/flat-lay-workstation-with-copy-space-laptop_23-2148430879.jpg')",
       }}
     >
-      {/* Left Info */}
       <div className="hidden md:flex w-1/2 bg-opacity-60 text-white items-center justify-center px-8">
         <div className="text-center">
           <h2 className="text-3xl font-semibold mb-2">CampusEcho</h2>
@@ -79,14 +82,15 @@ const LoginSignup = () => {
         </div>
       </div>
 
-      {/* Right Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-opacity-90 px-4">
         <div className="w-full max-w-xl bg-white rounded-xl shadow-lg p-8 sm:p-10 font-poppins">
-          {/* Toggle Buttons */}
           <div className="flex justify-between mb-6 bg-gray-200 rounded-xl overflow-hidden">
             <button
               className={`w-1/2 py-3 font-bold transition-all duration-300 ${islogin ? "bg-[#0A5F91] text-white" : "text-black"}`}
-              onClick={() => setlogin(true)}
+              onClick={() => {
+                setlogin(true);
+                setsignupstate("");
+              }}
             >
               Login
             </button>
@@ -98,10 +102,11 @@ const LoginSignup = () => {
             </button>
           </div>
 
-          {/* Forms */}
+          {/* Login Form */}
           {islogin ? (
             <form className="flex flex-col gap-4" onSubmit={handleLogin}>
               <h2 className="text-2xl font-semibold text-[#033452] mb-4">Login</h2>
+
               <select value={role} onChange={(e) => setRole(e.target.value)} className="p-3 border rounded-lg">
                 <option value="student">Student</option>
                 <option value="alumni">Alumni</option>
@@ -109,8 +114,17 @@ const LoginSignup = () => {
               <input type="email" placeholder="Email" required className="p-3 border rounded-lg bg-blue-50" onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
               <input type="password" placeholder="Password" required className="p-3 border rounded-lg bg-blue-50" onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
 
-              {/* Error Message */}
-              {loginError && (
+              {loading && (
+                <div className="text-blue-700 text-sm flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-blue-700" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
+                  </svg>
+                  Logging in...
+                </div>
+              )}
+
+              {loginError && !loading && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg text-sm">
                   {loginError}
                 </div>
@@ -182,6 +196,7 @@ const LoginSignup = () => {
 };
 
 export default LoginSignup;
+
 
 
 
