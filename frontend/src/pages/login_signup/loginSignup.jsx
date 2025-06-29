@@ -38,7 +38,7 @@ const LoginSignup = () => {
         navigate("/alumni-dashboard");
       }
     } catch (error) {
-      const msg = error?.response?.data?.message || "Login failed. Please try again.";
+      const msg = error?.response?.data?.error || "Login failed. Please try again.";
       setLoginError(msg);
     } finally {
       setLoading(false);
