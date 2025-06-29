@@ -219,7 +219,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { io } from "socket.io-client";
 import axiosInstance from "../../../../utils/axiosInstance";
 
 const socket = io("http://localhost:3000");
