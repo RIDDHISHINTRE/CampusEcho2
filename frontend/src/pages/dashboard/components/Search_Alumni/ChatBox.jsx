@@ -1,12 +1,10 @@
-
-
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import axiosInstance from "../../../../utils/axiosInstance";
 import { io } from "socket.io-client";
 
-// ✅ Replace this with your deployed backend socket server URL
-const SOCKET_SERVER_URL = "https://campus-echo-backend.onrender.com"; 
+// 🔁 Use your deployed backend URL
+const SOCKET_SERVER_URL = "https://campus-echo-backend.onrender.com";
 
 const socket = io(SOCKET_SERVER_URL, {
     transports: ["websocket"],
@@ -22,7 +20,6 @@ const ChatBox = () => {
     const [newMessage, setNewMessage] = useState("");
 
     useEffect(() => {
-        // Register current user with socket
         socket.emit("register", senderId);
 
         const fetchMessages = async () => {
@@ -43,6 +40,10 @@ const ChatBox = () => {
 
         socket.emit("seenMessages", { senderId, receiverId });
 
+        socket.on("receiveMessage", (message) => {
+            setMessages((prev) => [...prev, message]);
+        });
+
         socket.on("messagesSeen", (seenIds) => {
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -51,27 +52,17 @@ const ChatBox = () => {
             );
         });
 
-        socket.on("receiveMessage", (message) => {
-            setMessages((prev) => [...prev, message]);
-        });
-
         return () => {
             socket.off("receiveMessage");
             socket.off("messagesSeen");
         };
     }, [receiverId, senderId]);
 
-    const sendMessage = async () => {
+    const sendMessage = () => {
         if (!newMessage.trim()) return;
-
         const messageData = { senderId, receiverId, message: newMessage };
-        try {
-            const response = await axiosInstance.post("/messages/send", messageData);
-            socket.emit("sendMessage", response.data.data);
-            setNewMessage("");
-        } catch (error) {
-            console.error("Error sending message:", error);
-        }
+        socket.emit("sendMessage", messageData);
+        setNewMessage("");
     };
 
     const lastSentIndex = [...messages]
@@ -90,22 +81,12 @@ const ChatBox = () => {
                     const isLastSent = msg.id === lastSentMessageId;
 
                     return (
-                        <div
-                            key={msg.id}
-                            className={`flex flex-col ${
-                                isOwnMessage ? "items-end" : "items-start"
-                            }`}
-                        >
-                            <div
-                                className={`px-5 py-3 rounded-xl max-w-md break-words text-base ${
-                                    isOwnMessage
-                                        ? "bg-green-500 text-white"
-                                        : "bg-gray-300 text-black"
-                                }`}
-                            >
+                        <div key={msg.id} className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
+                            <div className={`px-5 py-3 rounded-xl max-w-md break-words text-base ${
+                                isOwnMessage ? "bg-green-500 text-white" : "bg-gray-300 text-black"
+                            }`}>
                                 {msg.message}
                             </div>
-
                             {isOwnMessage && isLastSent && (
                                 <div className="text-xs text-gray-500 mt-1 pr-2">
                                     {msg.isRead ? (
@@ -140,4 +121,3 @@ const ChatBox = () => {
 };
 
 export default ChatBox;
-
