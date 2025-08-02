@@ -26,10 +26,16 @@ const Job = sequelize.define("Job", {
         type: DataTypes.TEXT,
         allowNull: false,
     },
-    createdBy: {  // ID of the alumni who created the job
-        type: DataTypes.INTEGER,  // Same type as Alumni ID
-        allowNull: false,
-    }
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Alumni", // name of the table, not model file
+        key: "id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    },
 } ,{
     tableName :'Job'
     ,timestamps: true

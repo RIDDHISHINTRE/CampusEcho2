@@ -9,13 +9,15 @@ const WorkExperience = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    alumniId: {
+     alumniId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "Alumni", // Reference the table name
+        model: "Alumni", // table name
         key: "id",
       },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     },
     companyName: {
       type: DataTypes.STRING,
