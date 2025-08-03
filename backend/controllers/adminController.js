@@ -82,7 +82,8 @@ const verifyUser = async (req, res) => {
     console.log("Tempassword is:" ,tempPassword);
     res.status(200).json({ message: "User verified successfully", tempPassword });
   } catch (error) {
-    console.error("Error verifying user:", error);
+    console.error("Error verifying user:", error.message);
+    console.error(error.stack);
     res.status(500).json({ message: "Internal server error" });
   }
 };
