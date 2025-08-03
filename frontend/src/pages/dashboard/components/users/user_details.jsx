@@ -188,7 +188,7 @@ const UserDetails = () => {
       alert("User Verified Successfully!");
       navigate("/unverified-users");
     } catch (error) {
-      console.error("Error verifying user:", error);
+      console.log("Error verifying user:", error);
       alert("Verification Failed!");
     }
     setLoading(false);
