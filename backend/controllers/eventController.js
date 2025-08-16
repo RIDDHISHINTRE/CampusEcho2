@@ -141,4 +141,6 @@ const deletePastEvents = async () => {
 cron.schedule("0 0 * * *", () => {
     console.log("🕛 Running scheduled event cleanup...");
     deletePastEvents();
+} ,{
+    timezone: "Asia/Kolkata"
 });

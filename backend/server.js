@@ -99,6 +99,8 @@ sequelize.sync({ force: false }).then(() => {
       await deleteExpiredJobs();
       await deleteOldMessages();
       await notifyAlumni();
+    },{
+      timezone: "Asia/Kolkata"
     });
   });
 }).catch((err) => {
