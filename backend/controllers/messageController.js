@@ -2,7 +2,6 @@ const { Op } = require("sequelize");  // ✅ Import Op for query conditions
 const Message = require("../models/Message");
 const Student = require("../models/studentModel");
 const Alumni = require("../models/Alumni");
-const transporter = require("../config/nodemailerConfig")
 
 const sendMessage = async (req, res) => {
     try {

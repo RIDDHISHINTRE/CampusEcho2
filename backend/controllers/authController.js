@@ -6,29 +6,38 @@ require('dotenv').config();
 
 // ✅ Register Student
 const registerStudent = async (req, res) => {
-  const { name, email, collegeid, branch, year, collegeIdPhoto } = req.body;
+  const { name, email, collegeid, branch, year, collegeIdPhoto, password } = req.body;
 
-  if (!name || !email || !collegeid || !branch || !year) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Basic field validation
+  if (!name || !email || !collegeid || !branch || !year || !password) {
+    return res.status(400).json({ error: 'All fields including password are required' });
   }
 
   try {
+    // Check if student already exists
     const existingStudent = await Student.findOne({ where: { email } });
     if (existingStudent) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    // Validate photo URL if provided
     if (collegeIdPhoto && !/^https?:\/\/.+\..+/.test(collegeIdPhoto)) {
       return res.status(400).json({ error: 'Invalid college ID photo URL' });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create student entry (auto-verified)
     const student = await Student.create({
       name,
       email,
       collegeid,
       branch,
       year,
-      collegeIdPhoto
+      collegeIdPhoto,
+      password: hashedPassword,
+      isVerified: true // ✅ auto verify
     });
 
     res.status(201).json({ message: 'Student registered successfully', student });
@@ -39,29 +48,38 @@ const registerStudent = async (req, res) => {
 
 // ✅ Register Alumni
 const registerAlumni = async (req, res) => {
-  const { name, email, collegeid, branch, graduateCollegeYear, DegreePhoto } = req.body;
+  const { name, email, collegeid, branch, graduateCollegeYear, DegreePhoto, password } = req.body;
 
-  if (!name || !email || !collegeid || !branch || !graduateCollegeYear) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Basic field validation
+  if (!name || !email || !collegeid || !branch || !graduateCollegeYear || !password) {
+    return res.status(400).json({ error: 'All fields including password are required' });
   }
 
   try {
+    // Check if alumni already exists
     const existingAlumni = await Alumni.findOne({ where: { email } });
     if (existingAlumni) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    // Validate photo URL if provided
     if (DegreePhoto && !/^https?:\/\/.+\..+/.test(DegreePhoto)) {
       return res.status(400).json({ error: 'Invalid degree photo URL' });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create alumni entry (auto-verified)
     const alumni = await Alumni.create({
       name,
       email,
       collegeid,
       branch,
       graduateCollegeYear,
-      DegreePhoto
+      DegreePhoto,
+      password: hashedPassword,
+      isVerified: true // ✅ auto verify
     });
 
     res.status(201).json({ message: 'Alumni registered successfully', alumni });
@@ -69,7 +87,6 @@ const registerAlumni = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 // ✅ Login Student/Admin
 const loginStudent = async (req, res) => {
   const { email, password } = req.body;
