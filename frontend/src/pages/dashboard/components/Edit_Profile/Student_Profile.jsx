@@ -85,10 +85,6 @@ const EditStudentProfile = () => {
             <label className="block font-medium">Bio:</label>
             <textarea name="bio" value={studentData.bio} onChange={handleChange} className="w-full border p-3 rounded-md" placeholder="Write a short bio..." />
           </div>
-          <div className="col-span-2">
-            <label className="block font-medium">New Password (Optional):</label>
-            <input type="password" name="password" value={studentData.password} onChange={handleChange} className="w-full border p-3 rounded-md" placeholder="Enter new password (if changing)" />
-          </div>
           <div className="col-span-2 flex justify-end">
             <button type="submit" className="bg-green-500 text-white px-6 py-3 rounded-md flex items-center text-xl font-semibold hover:bg-green-600">
               <Save className="mr-2" /> Save Changes
